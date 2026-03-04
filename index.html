@@ -2,79 +2,83 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Contabilidad de Días</title>
+  <!-- CONFIGURACIÓN MÓVIL CRUCIAL: Evita el zoom accidental y adapta la pantalla -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mi Asistencia</title>
   
-  <!-- Tailwind CSS para los estilos -->
   <script src="https://cdn.tailwindcss.com"></script>
   
   <script>
-    tailwind.config = {
-      darkMode: 'media',
-    }
+    tailwind.config = { darkMode: 'media' }
   </script>
 
-  <!-- Librerías de React (Versiones estables y sin restricciones locales) -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  
-  <!-- Babel para leer React en el navegador -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
 
   <style>
-    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #f9fafb; }
-    @media (prefers-color-scheme: dark) { body { background-color: #0d1117; color: #f3f4f6; } }
+    body { 
+      margin: 0; 
+      font-family: system-ui, -apple-system, Roboto, sans-serif; 
+      background-color: #f9fafb; 
+      /* Quita el resplandor azul al tocar botones en celulares */
+      -webkit-tap-highlight-color: transparent; 
+      /* Evita la selección de texto accidental al hacer toques rápidos */
+      user-select: none;
+    }
+    @media (prefers-color-scheme: dark) { 
+      body { background-color: #0d1117; color: #f3f4f6; } 
+    }
+    .loader { border: 3px solid #f3f3f3; border-top: 3px solid #39d353; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; display: inline-block; margin-bottom: 15px;}
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    
+    /* Permite seleccionar texto en los inputs */
+    input, textarea { user-select: text; }
   </style>
 </head>
 <body>
-  <!-- Contenedor donde React dibujará la aplicación -->
   <div id="root">
-    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; color: #6b7280; font-family: sans-serif; text-align: center; padding: 20px;">
-      Cargando aplicación...<br><br>Si esto no desaparece, asegúrate de tener conexión a internet para descargar las herramientas visuales.
+    <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: #6b7280; font-family: sans-serif;">
+      <div class="loader"></div>
+      <div>Cargando app móvil...</div>
     </div>
   </div>
 
-  <!-- Script principal de la aplicación -->
   <script type="text/babel">
     const { useState, useEffect } = React;
 
-    // --- ÍCONOS (Dibujados manualmente para no depender de librerías extra que causen fallos) ---
+    // --- ÍCONOS ---
     const IconUser = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
-    const IconCalendar = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" x2="16" y1="2" y2="6"/><line x1="8" x2="8" y1="2" y2="6"/><line x1="3" x2="21" y1="10" y2="10"/></svg>;
     const IconChevronLeft = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 18-6-6 6-6"/></svg>;
     const IconChevronRight = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6"/></svg>;
     const IconDownload = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>;
     const IconRotateCcw = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>;
     const IconX = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>;
-    const IconEdit3 = ({ size, className }) => <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
+    const IconEdit3 = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
     const IconCopy = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
 
-    // --- FUNCIONES SEGURAS PARA GUARDAR EN MEMORIA ---
+    // Funciones seguras de almacenamiento
     const getSafeLocalItem = (key, defaultValue, isJson = true) => {
       try {
-        const item = localStorage.getItem(key);
+        const item = window.localStorage.getItem(key);
         if (item === null) return defaultValue;
         return isJson ? JSON.parse(item) : item;
-      } catch (e) {
-        return defaultValue;
-      }
+      } catch (e) { return defaultValue; }
     };
-
     const setSafeLocalItem = (key, value, isJson = true) => {
-      try {
-        localStorage.setItem(key, isJson ? JSON.stringify(value) : value);
-      } catch (e) {}
+      try { window.localStorage.setItem(key, isJson ? JSON.stringify(value) : value); } catch (e) {}
     };
 
-    // --- APLICACIÓN ---
+    const pad = (n) => n < 10 ? '0' + n : String(n);
+
     const App = () => {
       const [currentDate, setCurrentDate] = useState(new Date());
       const [workedDays, setWorkedDays] = useState(() => getSafeLocalItem('app-workedDays', {}));
-      const [workerName, setWorkerName] = useState(() => getSafeLocalItem('app-workerName', 'Nombre del Trabajador', false));
+      const [workerName, setWorkerName] = useState(() => getSafeLocalItem('app-workerName', 'Nombre', false));
       const [dayDetails, setDayDetails] = useState(() => getSafeLocalItem('app-dayDetails', {}));
       const [modalInfo, setModalInfo] = useState({ isOpen: false, day: null, dateKey: '', tempDetail: '' });
+      const [showClearConfirm, setShowClearConfirm] = useState(false);
 
-      // Guardar datos al detectar cambios
       useEffect(() => { setSafeLocalItem('app-workedDays', workedDays); }, [workedDays]);
       useEffect(() => { setSafeLocalItem('app-workerName', workerName, false); }, [workerName]);
       useEffect(() => { setSafeLocalItem('app-dayDetails', dayDetails); }, [dayDetails]);
@@ -83,7 +87,7 @@
       const month = currentDate.getMonth();
 
       const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+      const dayNames = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do']; // Nombres más cortos para móvil
 
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       
@@ -96,21 +100,20 @@
 
       const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
       const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
-      const goToToday = () => setCurrentDate(new Date());
 
-      const formatDateKey = (y, m, d) => `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const formatDateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
 
       const getPreviousDateKey = (dateString) => {
         if (!dateString) return null;
-        const [y, m, d] = dateString.split('-').map(Number);
-        const date = new Date(y, m - 1, d);
+        const parts = dateString.split('-');
+        const date = new Date(parts[0], parts[1] - 1, parts[2]);
         date.setDate(date.getDate() - 1);
         return formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
       };
 
       const openDayModal = (day) => {
         const dateKey = formatDateKey(year, month, day);
-        setModalInfo({ isOpen: true, day, dateKey, tempDetail: dayDetails[dateKey] || '' });
+        setModalInfo({ isOpen: true, day, dateKey, tempDetail: (dayDetails && dayDetails[dateKey]) ? dayDetails[dateKey] : '' });
       };
 
       const closeDayModal = () => setModalInfo(prev => ({ ...prev, isOpen: false }));
@@ -121,21 +124,20 @@
       };
 
       const toggleDayInModal = () => {
-        setWorkedDays(prev => ({ ...prev, [modalInfo.dateKey]: !prev[modalInfo.dateKey] }));
+        setWorkedDays(prev => ({ ...prev, [modalInfo.dateKey]: !(prev && prev[modalInfo.dateKey]) }));
       };
 
-      const clearCurrentMonth = () => {
-        if(window.confirm(`¿Estás seguro de querer limpiar todos los datos de ${monthNames[month]}?`)) {
-          const newWorkedDays = { ...workedDays };
-          const newDayDetails = { ...dayDetails };
-          for (let i = 1; i <= daysInMonth; i++) {
-            const key = formatDateKey(year, month, i);
-            delete newWorkedDays[key];
-            delete newDayDetails[key];
-          }
-          setWorkedDays(newWorkedDays);
-          setDayDetails(newDayDetails);
+      const executeClearMonth = () => {
+        const newWorkedDays = { ...workedDays };
+        const newDayDetails = { ...dayDetails };
+        for (let i = 1; i <= daysInMonth; i++) {
+          const key = formatDateKey(year, month, i);
+          delete newWorkedDays[key];
+          delete newDayDetails[key];
         }
+        setWorkedDays(newWorkedDays);
+        setDayDetails(newDayDetails);
+        setShowClearConfirm(false);
       };
 
       const getLaborableDaysInMonth = () => {
@@ -150,25 +152,25 @@
       const currentMonthWorkedCount = () => {
         let count = 0;
         for (let i = 1; i <= daysInMonth; i++) {
-          if (workedDays[formatDateKey(year, month, i)]) count++;
+          if (workedDays && workedDays[formatDateKey(year, month, i)]) count++;
         }
         return count;
       };
 
       const laborableDays = getLaborableDaysInMonth();
       const workedCount = currentMonthWorkedCount();
-      const percentage = Math.round((workedCount / laborableDays) * 100);
+      const percentage = Math.round((workedCount / laborableDays) * 100) || 0;
 
-      // --- GENERADOR DE IMAGEN (CANVAS) ---
+      // Generador de imagen (Se mantiene igual, funcional en móvil)
       const exportAnnualReport = () => {
         const canvas = document.createElement('canvas');
         const ctx = canvas.getContext('2d');
-        
         const scale = 2;
         const width = 800; 
         
-        const yearDetailsEntries = Object.keys(dayDetails)
-          .filter(k => k.startsWith(year.toString()) && dayDetails[k].trim() !== '')
+        const safeDayDetails = dayDetails || {};
+        const yearDetailsEntries = Object.keys(safeDayDetails)
+          .filter(k => k.startsWith(year.toString()) && safeDayDetails[k] && safeDayDetails[k].trim() !== '')
           .sort();
         
         const baseHeight = 1060;
@@ -187,16 +189,16 @@
         ctx.textAlign = 'center';
         ctx.fillText(`Reporte Anual: ${workerName} - ${year}`, width / 2, 60);
         
-        const totalWorkedYear = Object.keys(workedDays).filter(k => k.startsWith(year.toString()) && workedDays[k]).length;
+        const safeWorkedDays = workedDays || {};
+        const totalWorkedYear = Object.keys(safeWorkedDays).filter(k => k.startsWith(year.toString()) && safeWorkedDays[k]).length;
         ctx.font = '18px system-ui, -apple-system, sans-serif';
         ctx.fillStyle = '#4B5563';
-        ctx.fillText(`Total de días trabajados en el año: ${totalWorkedYear}`, width / 2, 95);
+        ctx.fillText(`Total de días trabajados: ${totalWorkedYear}`, width / 2, 95);
         
         ctx.beginPath();
         ctx.moveTo(50, 120);
         ctx.lineTo(750, 120);
         ctx.strokeStyle = '#E5E7EB';
-        ctx.lineWidth = 1;
         ctx.stroke();
 
         const startX = 55, startY = 160, colWidth = 235, rowHeight = 210, cellSize = 24, cellGap = 4;
@@ -213,14 +215,8 @@
           ctx.lineTo(x, y + r);
           ctx.quadraticCurveTo(x, y, x + r, y);
           ctx.closePath();
-          
-          if (isStrokeMode) {
-            ctx.strokeStyle = '#E5E7EB';
-            ctx.lineWidth = 1;
-            ctx.stroke();
-          } else {
-            ctx.fill();
-          }
+          if (isStrokeMode) { ctx.strokeStyle = '#E5E7EB'; ctx.stroke(); } 
+          else { ctx.fill(); }
         };
 
         for (let m = 0; m < 12; m++) {
@@ -254,7 +250,7 @@
             const cellY = y + 30 + dRow * (cellSize + cellGap);
             
             const dateKey = formatDateKey(year, m, d);
-            const isWorked = workedDays[dateKey];
+            const isWorked = safeWorkedDays[dateKey];
             
             if (isWorked) {
               ctx.fillStyle = '#39d353';
@@ -279,27 +275,24 @@
           ctx.fillStyle = '#111827';
           ctx.font = 'bold 18px system-ui, -apple-system, sans-serif';
           ctx.textAlign = 'left';
-          ctx.fillText('Detalles de Rutas / Observaciones:', 55, baseHeight - 40);
+          ctx.fillText('Rutas / Observaciones:', 55, baseHeight - 40);
 
           ctx.font = '14px system-ui, -apple-system, sans-serif';
           ctx.fillStyle = '#4B5563';
           
           yearDetailsEntries.forEach((dateKey, idx) => {
-            const isWorked = workedDays[dateKey];
-            const status = isWorked ? '[Trabajado]' : '[No Trabajado]';
-            const text = `${dateKey} ${status}: ${dayDetails[dateKey]}`;
-            
+            const isWorked = safeWorkedDays[dateKey];
+            const status = isWorked ? '[Sí]' : '[No]';
+            const text = `${dateKey} ${status}: ${safeDayDetails[dateKey]}`;
             const maxLength = 100;
-            const displayText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
-
-            ctx.fillText(displayText, 55, baseHeight - 10 + (idx * 25));
+            ctx.fillText(text.length > maxLength ? text.substring(0, maxLength) + '...' : text, 55, baseHeight - 10 + (idx * 25));
           });
         }
 
         ctx.fillStyle = '#9CA3AF';
         ctx.font = '12px system-ui, -apple-system, sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(`Documento generado el ${new Date().toLocaleDateString()} - Contabilidad de Días`, width / 2, height - 30);
+        ctx.fillText(`Generado el ${new Date().toLocaleDateString()}`, width / 2, height - 30);
         
         const dataUrl = canvas.toDataURL('image/png');
         const link = document.createElement('a');
@@ -310,9 +303,8 @@
 
       const renderCalendarDays = () => {
         const cells = [];
-        
         for (let i = 0; i < firstDayOfMonth; i++) {
-          cells.push(<div key={`empty-${i}`} className="h-12 sm:h-16 md:h-20 bg-transparent rounded-md border border-gray-200 dark:border-gray-800 opacity-50"></div>);
+          cells.push(<div key={`empty-${i}`} className="h-12 border border-transparent"></div>);
         }
 
         for (let day = 1; day <= daysInMonth; day++) {
@@ -320,7 +312,8 @@
           const isWeekend = dayOfWeekPos === 5 || dayOfWeekPos === 6; 
           
           const dateKey = formatDateKey(year, month, day);
-          const isWorked = workedDays[dateKey];
+          const isWorked = workedDays && workedDays[dateKey];
+          const hasDetail = dayDetails && dayDetails[dateKey] && dayDetails[dateKey].trim() !== '';
           
           const today = new Date();
           const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
@@ -330,23 +323,22 @@
               key={`day-${day}`}
               onClick={() => openDayModal(day)}
               className={`
-                relative h-12 sm:h-16 md:h-20 rounded-md border flex items-center justify-center text-lg font-semibold transition-all duration-200
+                relative h-12 w-full rounded-lg flex items-center justify-center text-base sm:text-lg font-bold transition-transform active:scale-95
                 ${isWorked 
-                  ? 'bg-[#39d353] border-[#39d353] text-gray-900 shadow-[0_0_10px_rgba(57,211,83,0.4)]' 
+                  ? 'bg-[#39d353] text-gray-900 shadow-md' 
                   : isWeekend 
-                    ? 'bg-transparent border-dashed border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-[#161b22]/50' 
-                    : 'bg-white dark:bg-[#161b22] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+                    ? 'border border-dashed border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600' 
+                    : 'bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 shadow-sm'
                 }
-                ${isToday && !isWorked ? 'ring-2 ring-blue-500' : ''}
-                active:scale-95
+                ${isToday && !isWorked ? 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-[#0d1117]' : ''}
               `}
             >
               {day}
-              {dayDetails[dateKey] && dayDetails[dateKey].trim() !== '' && (
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm border-2 border-white dark:border-[#161b22]"></span>
+              {hasDetail && (
+                <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500 border border-white dark:border-[#161b22]"></span>
               )}
               {isToday && (
-                <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${isWorked ? 'bg-white' : 'bg-blue-500'}`}></span>
+                <span className={`absolute bottom-1 w-1 h-1 rounded-full ${isWorked ? 'bg-white' : 'bg-blue-500'}`}></span>
               )}
             </button>
           );
@@ -355,52 +347,71 @@
       };
 
       const prevDateKey = getPreviousDateKey(modalInfo.dateKey);
-      const prevDayDetail = prevDateKey ? dayDetails[prevDateKey] : null;
+      const prevDayDetail = (prevDateKey && dayDetails) ? dayDetails[prevDateKey] : null;
       const hasPreviousDetail = prevDayDetail && prevDayDetail.trim() !== '';
 
       return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 p-4 sm:p-6 md:p-8 font-sans transition-colors duration-300">
-          <div className="max-w-4xl mx-auto space-y-6">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 p-2 sm:p-4 pb-10">
+          <div className="max-w-md mx-auto space-y-4">
             
-            {/* Encabezado */}
-            <header className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-[#161b22] p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
-              <div className="flex items-center gap-3 w-full sm:w-auto">
-                <div className="p-3 bg-[#39d353]/10 text-[#39d353] rounded-xl flex-shrink-0">
-                  <IconUser size={28} />
-                </div>
-                <div className="flex flex-col w-full">
-                  <input 
-                    type="text" 
-                    value={workerName}
-                    onChange={(e) => setWorkerName(e.target.value)}
-                    className="text-xl sm:text-2xl font-bold bg-transparent border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-[#39d353] focus:outline-none transition-colors w-full text-gray-900 dark:text-white pb-1"
-                    placeholder="Nombre del trabajador"
-                  />
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Contabilidad de Días y Rutas (Lun-Vie)</p>
-                </div>
+            {/* Header Perfil - Estilo Móvil */}
+            <header className="bg-white dark:bg-[#161b22] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-3">
+              <div className="p-3 bg-[#39d353]/10 text-[#39d353] rounded-full shrink-0">
+                <IconUser size={24} />
               </div>
-
-              <div className="flex items-center bg-gray-100 dark:bg-[#0d1117] rounded-lg p-1 flex-shrink-0">
-                <button onClick={prevMonth} className="p-2 rounded-md hover:bg-white dark:hover:bg-[#161b22] text-gray-600 dark:text-gray-400 transition-colors">
-                  <IconChevronLeft size={20} />
-                </button>
-                <button onClick={goToToday} className="px-4 py-2 font-medium hover:bg-white dark:hover:bg-[#161b22] rounded-md transition-colors">
-                  {monthNames[month]} {year}
-                </button>
-                <button onClick={nextMonth} className="p-2 rounded-md hover:bg-white dark:hover:bg-[#161b22] text-gray-600 dark:text-gray-400 transition-colors">
-                  <IconChevronRight size={20} />
-                </button>
+              <div className="flex-1 min-w-0">
+                <input 
+                  type="text" 
+                  value={workerName}
+                  onChange={(e) => setWorkerName(e.target.value)}
+                  className="w-full text-lg font-bold bg-transparent focus:outline-none focus:border-b-2 focus:border-[#39d353] text-gray-900 dark:text-white truncate"
+                  placeholder="Tu Nombre"
+                />
+                <p className="text-xs text-gray-500 truncate">Registro de Días y Rutas</p>
               </div>
             </header>
 
-            {/* Resumen del Mes */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="bg-white dark:bg-[#161b22] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            {/* Navegación y Resumen del Mes */}
+            <div className="bg-white dark:bg-[#161b22] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 space-y-4">
+              
+              <div className="flex items-center justify-between">
+                <button onClick={prevMonth} className="p-2 rounded-full bg-gray-100 dark:bg-[#0d1117] active:bg-gray-200 dark:active:bg-gray-800">
+                  <IconChevronLeft size={20} />
+                </button>
+                <div className="text-center font-bold text-lg capitalize">
+                  {monthNames[month]} {year}
+                </div>
+                <button onClick={nextMonth} className="p-2 rounded-full bg-gray-100 dark:bg-[#0d1117] active:bg-gray-200 dark:active:bg-gray-800">
+                  <IconChevronRight size={20} />
+                </button>
+              </div>
+
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-[#0d1117] p-3 rounded-xl">
                 <div>
-                  <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Días trabajados este mes</p>
-                  <p className="text-4xl font-bold mt-1 text-[#39d353]">
-                    {workedCount} <span className="text-lg text-gray-400 font-normal">/ {laborableDays} laborables</span>
+                  <p className="text-xs font-medium text-gray-500">Progreso mensual</p>
+                  <p className="text-2xl font-black text-[#39d353]">
+                    {workedCount} <span className="text-sm font-normal text-gray-400">/ {laborableDays} d</span>
                   </p>
                 </div>
-                <div className="h-16 w-16 rounded-full border-4 border-[#39d353]/20 flex items-center justify-center">
-                  <div className="text-[#3
+                <div className="h-14 w-14 rounded-full border-[3px] border-[#39d353]/20 flex items-center justify-center bg-white dark:bg-[#161b22]">
+                  <span className="text-[#39d353] font-bold text-sm">{percentage}%</span>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Calendario */}
+            <div className="bg-white dark:bg-[#161b22] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
+              <div className="grid grid-cols-7 mb-2">
+                {dayNames.map((day, idx) => (
+                  <div key={day} className={`text-center font-bold text-xs mb-2 ${idx >= 5 ? 'text-gray-400/60' : 'text-gray-500'}`}>
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+                {renderCalendarDays()}
+              </div>
+              
+              <div cl
