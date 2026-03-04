@@ -15,12 +15,12 @@
     }
   </script>
 
-  <!-- Librerías de React (usando Cloudflare para mayor velocidad y fiabilidad) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
+  <!-- Librerías de React corregidas (sin crossorigin para evitar bloqueos locales) -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   
   <!-- Babel para que el navegador lea el código de React directamente -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     /* Estilos base */
@@ -36,7 +36,7 @@
     </div>
   </div>
 
-  <script type="text/babel" data-presets="react,env">
+  <script type="text/babel">
     const { useState, useEffect } = React;
 
     // --- ÍCONOS REUTILIZABLES ---
@@ -406,4 +406,7 @@
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Días trabajados este mes</p>
                   <p className="text-4xl font-bold mt-1 text-[#39d353]">
                     {workedCount} <span className="text-lg text-gray-400 font-normal">/ {laborableDays} laborables</span>
-  
+                  </p>
+                </div>
+                <div className="h-16 w-16 rounded-full border-4 border-[#39d353]/20 flex items-center justify-center">
+        
