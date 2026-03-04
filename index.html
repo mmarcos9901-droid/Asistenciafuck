@@ -1,0 +1,464 @@
+import React, { useState } from 'react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, RotateCcw, Download, User, X, Edit3, Copy } from 'lucide-react';
+
+const App = () => {
+  // Estados principales
+  const [currentDate, setCurrentDate] = useState(new Date());
+  const [workedDays, setWorkedDays] = useState({});
+  const [workerName, setWorkerName] = useState('Nombre del Trabajador');
+  const [dayDetails, setDayDetails] = useState({});
+  
+  // Estado para controlar la ventana modal de detalles de cada día
+  const [modalInfo, setModalInfo] = useState({ isOpen: false, day: null, dateKey: '', tempDetail: '' });
+
+  const year = currentDate.getFullYear();
+  const month = currentDate.getMonth();
+
+  const monthNames = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+  const dayNames = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfMonth = new Date(year, month, 1).getDay();
+
+  // Navegación
+  const prevMonth = () => setCurrentDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setCurrentDate(new Date(year, month + 1, 1));
+  const goToToday = () => setCurrentDate(new Date());
+
+  // Formatear fecha a YYYY-MM-DD
+  const formatDateKey = (y, m, d) => {
+    return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+  };
+
+  // Obtener la fecha del día anterior (para la nueva función de copiar)
+  const getPreviousDateKey = (dateString) => {
+    if (!dateString) return null;
+    const [y, m, d] = dateString.split('-').map(Number);
+    const date = new Date(y, m - 1, d);
+    date.setDate(date.getDate() - 1);
+    return formatDateKey(date.getFullYear(), date.getMonth(), date.getDate());
+  };
+
+  // Funciones del Modal
+  const openDayModal = (day) => {
+    const dateKey = formatDateKey(year, month, day);
+    setModalInfo({
+      isOpen: true,
+      day,
+      dateKey,
+      tempDetail: dayDetails[dateKey] || ''
+    });
+  };
+
+  const closeDayModal = () => {
+    setModalInfo(prev => ({ ...prev, isOpen: false }));
+  };
+
+  const saveDayDetail = () => {
+    setDayDetails(prev => ({ ...prev, [modalInfo.dateKey]: modalInfo.tempDetail }));
+    closeDayModal();
+  };
+
+  const toggleDayInModal = () => {
+    setWorkedDays(prev => ({
+      ...prev,
+      [modalInfo.dateKey]: !prev[modalInfo.dateKey]
+    }));
+  };
+
+  // Acción rápida desde el panel
+  const clearCurrentMonth = () => {
+    const newWorkedDays = { ...workedDays };
+    const newDayDetails = { ...dayDetails };
+    for (let i = 1; i <= daysInMonth; i++) {
+      const key = formatDateKey(year, month, i);
+      delete newWorkedDays[key];
+      delete newDayDetails[key];
+    }
+    setWorkedDays(newWorkedDays);
+    setDayDetails(newDayDetails);
+  };
+
+  const currentMonthWorkedCount = () => {
+    let count = 0;
+    for (let i = 1; i <= daysInMonth; i++) {
+      if (workedDays[formatDateKey(year, month, i)]) count++;
+    }
+    return count;
+  };
+
+  // Exportar reporte anual
+  const exportAnnualReport = () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    
+    const scale = 2;
+    const width = 800; 
+    
+    const yearDetailsEntries = Object.keys(dayDetails)
+      .filter(k => k.startsWith(year.toString()) && dayDetails[k].trim() !== '')
+      .sort();
+    
+    const baseHeight = 1060;
+    const detailsHeight = yearDetailsEntries.length > 0 ? (yearDetailsEntries.length * 25 + 80) : 0;
+    const height = baseHeight + detailsHeight; 
+    
+    canvas.width = width * scale;
+    canvas.height = height * scale;
+    ctx.scale(scale, scale);
+    
+    // Fondo
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Título
+    ctx.fillStyle = '#111827';
+    ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Reporte Anual: ${workerName} - ${year}`, width / 2, 60);
+    
+    // Estadísticas
+    const totalWorkedYear = Object.keys(workedDays).filter(k => k.startsWith(year.toString()) && workedDays[k]).length;
+    ctx.font = '18px system-ui, -apple-system, sans-serif';
+    ctx.fillStyle = '#4B5563';
+    ctx.fillText(`Total de días trabajados registrados en el año: ${totalWorkedYear}`, width / 2, 95);
+    
+    ctx.beginPath();
+    ctx.moveTo(50, 120);
+    ctx.lineTo(750, 120);
+    ctx.strokeStyle = '#E5E7EB';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // Dibujar Meses
+    const startX = 55, startY = 160, colWidth = 235, rowHeight = 210, cellSize = 24, cellGap = 4;
+    
+    const drawRoundRect = (x, y, w, h, r) => {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.lineTo(x + w - r, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+      ctx.lineTo(x + w, y + h - r);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+      ctx.lineTo(x + r, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+      ctx.lineTo(x, y + r);
+      ctx.quadraticCurveTo(x, y, x + r, y);
+      ctx.closePath();
+      ctx.fill();
+    };
+
+    for (let m = 0; m < 12; m++) {
+      const row = Math.floor(m / 3);
+      const col = m % 3;
+      const x = startX + col * colWidth;
+      const y = startY + row * rowHeight;
+      
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 16px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText(monthNames[m], x, y);
+      
+      ctx.font = 'bold 10px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#6B7280';
+      ctx.textAlign = 'center';
+      dayNames.forEach((d, i) => {
+        ctx.fillText(d.substring(0,1), x + i * (cellSize + cellGap) + cellSize/2, y + 20);
+      });
+      
+      const daysInM = new Date(year, m + 1, 0).getDate();
+      const firstDay = new Date(year, m, 1).getDay();
+      
+      for (let d = 1; d <= daysInM; d++) {
+        const dayPos = firstDay + d - 1;
+        const dRow = Math.floor(dayPos / 7);
+        const dCol = dayPos % 7;
+        
+        const cellX = x + dCol * (cellSize + cellGap);
+        const cellY = y + 30 + dRow * (cellSize + cellGap);
+        
+        const dateKey = formatDateKey(year, m, d);
+        const isWorked = workedDays[dateKey];
+        
+        ctx.fillStyle = isWorked ? '#39d353' : '#F3F4F6';
+        drawRoundRect(cellX, cellY, cellSize, cellSize, 4);
+        
+        ctx.fillStyle = isWorked ? '#ffffff' : '#9CA3AF';
+        ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(d.toString(), cellX + cellSize/2, cellY + cellSize/2 + 1);
+      }
+    }
+    
+    // Lista de detalles
+    if (yearDetailsEntries.length > 0) {
+      ctx.fillStyle = '#111827';
+      ctx.font = 'bold 18px system-ui, -apple-system, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.fillText('Detalles de Rutas / Observaciones:', 55, baseHeight - 40);
+
+      ctx.font = '14px system-ui, -apple-system, sans-serif';
+      ctx.fillStyle = '#4B5563';
+      
+      yearDetailsEntries.forEach((dateKey, idx) => {
+        const isWorked = workedDays[dateKey];
+        const status = isWorked ? '[Trabajado]' : '[No Trabajado]';
+        const text = `${dateKey} ${status}: ${dayDetails[dateKey]}`;
+        
+        const maxLength = 100;
+        const displayText = text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+
+        ctx.fillText(displayText, 55, baseHeight - 10 + (idx * 25));
+      });
+    }
+
+    // Pie de página
+    ctx.fillStyle = '#9CA3AF';
+    ctx.font = '12px system-ui, -apple-system, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`Documento generado el ${new Date().toLocaleDateString()} - Contabilidad de Días`, width / 2, height - 30);
+    
+    const dataUrl = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.download = `Reporte-${workerName.replace(/\s+/g, '-')}-${year}.png`;
+    link.href = dataUrl;
+    link.click();
+  };
+
+  const renderCalendarDays = () => {
+    const cells = [];
+    
+    for (let i = 0; i < firstDayOfMonth; i++) {
+      cells.push(<div key={`empty-${i}`} className="h-12 sm:h-16 md:h-20 bg-transparent rounded-md border border-gray-200 dark:border-gray-800 opacity-50"></div>);
+    }
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dateKey = formatDateKey(year, month, day);
+      const isWorked = workedDays[dateKey];
+      
+      const today = new Date();
+      const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+      cells.push(
+        <button
+          key={`day-${day}`}
+          onClick={() => openDayModal(day)}
+          className={`
+            relative h-12 sm:h-16 md:h-20 rounded-md border flex items-center justify-center text-lg font-semibold transition-all duration-200
+            ${isWorked 
+              ? 'bg-[#39d353] border-[#39d353] text-gray-900 shadow-[0_0_10px_rgba(57,211,83,0.4)]' 
+              : 'bg-white dark:bg-[#161b22] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
+            }
+            ${isToday && !isWorked ? 'ring-2 ring-blue-500' : ''}
+            active:scale-95
+          `}
+        >
+          {day}
+          {dayDetails[dateKey] && dayDetails[dateKey].trim() !== '' && (
+            <span className="absolute top-1 right-1 w-2.5 h-2.5 rounded-full bg-blue-500 shadow-sm border-2 border-white dark:border-[#161b22]"></span>
+          )}
+          {isToday && (
+            <span className={`absolute bottom-1 w-1.5 h-1.5 rounded-full ${isWorked ? 'bg-white' : 'bg-blue-500'}`}></span>
+          )}
+        </button>
+      );
+    }
+
+    return cells;
+  };
+
+  // Determinar si hay detalles en el día anterior para mostrar el botón de copiar
+  const prevDateKey = getPreviousDateKey(modalInfo.dateKey);
+  const prevDayDetail = prevDateKey ? dayDetails[prevDateKey] : null;
+  const hasPreviousDetail = prevDayDetail && prevDayDetail.trim() !== '';
+
+  return (
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0d1117] text-gray-900 dark:text-gray-100 p-4 sm:p-6 md:p-8 font-sans transition-colors duration-300">
+      <div className="max-w-4xl mx-auto space-y-6">
+        
+        {/* Encabezado */}
+        <header className="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white dark:bg-[#161b22] p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="flex items-center gap-3 w-full sm:w-auto">
+            <div className="p-3 bg-[#39d353]/10 text-[#39d353] rounded-xl flex-shrink-0">
+              <User size={28} />
+            </div>
+            <div className="flex flex-col w-full">
+              <input 
+                type="text" 
+                value={workerName}
+                onChange={(e) => setWorkerName(e.target.value)}
+                className="text-xl sm:text-2xl font-bold bg-transparent border-b-2 border-transparent hover:border-gray-300 dark:hover:border-gray-700 focus:border-[#39d353] focus:outline-none transition-colors w-full text-gray-900 dark:text-white pb-1"
+                placeholder="Nombre del trabajador"
+              />
+              <p className="text-sm text-gray-500 dark:text-gray-400">Contabilidad de Días y Rutas</p>
+            </div>
+          </div>
+
+          <div className="flex items-center bg-gray-100 dark:bg-[#0d1117] rounded-lg p-1 flex-shrink-0">
+            <button 
+              onClick={prevMonth}
+              className="p-2 rounded-md hover:bg-white dark:hover:bg-[#161b22] text-gray-600 dark:text-gray-400 transition-colors"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button 
+              onClick={goToToday}
+              className="px-4 py-2 font-medium hover:bg-white dark:hover:bg-[#161b22] rounded-md transition-colors"
+            >
+              {monthNames[month]} {year}
+            </button>
+            <button 
+              onClick={nextMonth}
+              className="p-2 rounded-md hover:bg-white dark:hover:bg-[#161b22] text-gray-600 dark:text-gray-400 transition-colors"
+            >
+              <ChevronRight size={20} />
+            </button>
+          </div>
+        </header>
+
+        {/* Resumen del Mes y Acciones */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="bg-white dark:bg-[#161b22] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Días trabajados este mes</p>
+              <p className="text-4xl font-bold mt-1 text-[#39d353]">
+                {currentMonthWorkedCount()} <span className="text-lg text-gray-400 font-normal">/ {daysInMonth}</span>
+              </p>
+            </div>
+            <div className="h-16 w-16 rounded-full border-4 border-[#39d353]/20 flex items-center justify-center">
+              <div 
+                className="text-[#39d353] font-bold"
+                style={{ fontSize: currentMonthWorkedCount() === daysInMonth ? '1.5rem' : '1.25rem' }}
+              >
+                {Math.round((currentMonthWorkedCount() / daysInMonth) * 100)}%
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white dark:bg-[#161b22] p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 flex flex-col justify-center items-start gap-4">
+            <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Acciones rápidas</p>
+            <div className="flex flex-wrap gap-2">
+              <button 
+                onClick={exportAnnualReport}
+                className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors text-sm font-medium border border-blue-200 dark:border-blue-800/50"
+              >
+                <Download size={16} />
+                Exportar Reporte
+              </button>
+              <button 
+                onClick={clearCurrentMonth}
+                className="flex items-center gap-2 px-4 py-2 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors text-sm font-medium border border-red-200 dark:border-red-800/50"
+              >
+                <RotateCcw size={16} />
+                Limpiar mes
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Calendario */}
+        <div className="bg-white dark:bg-[#161b22] p-4 sm:p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800">
+          <div className="grid grid-cols-7 mb-4">
+            {dayNames.map(day => (
+              <div key={day} className="text-center font-medium text-sm text-gray-500 dark:text-gray-400">
+                {day}
+              </div>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-7 gap-2 sm:gap-3">
+            {renderCalendarDays()}
+          </div>
+          
+          <div className="mt-6 flex flex-wrap items-center justify-end gap-4 text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center gap-2">
+              <span>Descanso</span>
+              <div className="w-4 h-4 rounded-sm bg-gray-100 dark:bg-[#0d1117] border border-gray-200 dark:border-gray-700"></div>
+              <div className="w-4 h-4 rounded-sm bg-[#39d353]"></div>
+              <span>Trabajado</span>
+            </div>
+            <div className="flex items-center gap-1.5 border-l border-gray-300 dark:border-gray-700 pl-4">
+              <div className="w-2.5 h-2.5 rounded-full bg-blue-500"></div> 
+              <span>Día con ruta registrada</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal de Detalles del Día */}
+        {modalInfo.isOpen && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50 animate-in fade-in duration-200">
+            <div className="bg-white dark:bg-[#161b22] rounded-2xl p-6 w-full max-w-md shadow-xl border border-gray-200 dark:border-gray-800">
+              <div className="flex justify-between items-center mb-5">
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                  Día: {modalInfo.day} de {monthNames[month]} {year}
+                </h3>
+                <button onClick={closeDayModal} className="text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800 p-1.5 rounded-md transition-colors">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-5">
+                <div className="flex items-center justify-between p-3.5 bg-gray-50 dark:bg-[#0d1117] rounded-xl border border-gray-200 dark:border-gray-700">
+                  <span className="font-medium text-gray-700 dark:text-gray-300">¿Asistió a trabajar?</span>
+                  <button 
+                    onClick={toggleDayInModal}
+                    className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
+                      workedDays[modalInfo.dateKey] 
+                        ? 'bg-[#39d353] text-gray-900 shadow-[0_0_10px_rgba(57,211,83,0.4)] hover:bg-[#2ea043]' 
+                        : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    {workedDays[modalInfo.dateKey] ? 'Sí, trabajado' : 'No'}
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex justify-between items-end">
+                    <label className="font-medium text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <Edit3 size={18} className="text-[#39d353]" />
+                      Ruta o Detalle del día
+                    </label>
+                    
+                    {/* Botón de copiar ruta anterior (Solo aparece si hay ruta ayer) */}
+                    {hasPreviousDetail && (
+                      <button
+                        onClick={() => setModalInfo(prev => ({ ...prev, tempDetail: prevDayDetail }))}
+                        className="text-xs flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors font-medium bg-blue-50 dark:bg-blue-900/20 px-2 py-1 rounded-md"
+                        title="Copiar texto del día anterior"
+                      >
+                        <Copy size={14} />
+                        Copiar ruta de ayer
+                      </button>
+                    )}
+                  </div>
+                  
+                  <textarea 
+                    value={modalInfo.tempDetail}
+                    onChange={(e) => setModalInfo(prev => ({ ...prev, tempDetail: e.target.value }))}
+                    className="w-full p-3.5 bg-white dark:bg-[#0d1117] border border-gray-300 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-[#39d353] focus:border-transparent outline-none transition-all resize-none h-28 text-gray-900 dark:text-white leading-relaxed"
+                    placeholder="Ej: Ruta zona norte, visita a clientes..."
+                  />
+                </div>
+
+                <button 
+                  onClick={saveDayDetail}
+                  className="w-full py-3.5 bg-[#39d353] hover:bg-[#2ea043] text-gray-900 rounded-xl font-bold transition-all shadow-sm active:scale-[0.98] text-lg"
+                >
+                  Guardar Cambios
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+    </div>
+  );
+};
+
+export default App;
+
+
