@@ -8,29 +8,35 @@
   <!-- Tailwind CSS para los estilos -->
   <script src="https://cdn.tailwindcss.com"></script>
   
-  <!-- Configuración de colores oscuros de Tailwind si es necesario -->
+  <!-- Configuración de colores oscuros de Tailwind -->
   <script>
     tailwind.config = {
       darkMode: 'media',
     }
   </script>
 
-  <!-- Librerías de React -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <!-- Librerías de React (usando Cloudflare para mayor velocidad y fiabilidad) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin="anonymous"></script>
   
   <!-- Babel para que el navegador lea el código de React directamente -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.22.20/babel.min.js" crossorigin="anonymous"></script>
 
   <style>
     /* Estilos base */
-    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { margin: 0; font-family: system-ui, -apple-system, sans-serif; background-color: #f9fafb; }
+    @media (prefers-color-scheme: dark) { body { background-color: #0d1117; } }
   </style>
 </head>
 <body>
-  <div id="root"></div>
+  <!-- Mensaje de carga inicial por si tarda en montar -->
+  <div id="root">
+    <div style="display: flex; justify-content: center; align-items: center; height: 100vh; color: #6b7280; font-family: sans-serif;">
+      Cargando aplicación...
+    </div>
+  </div>
 
-  <script type="text/babel">
+  <script type="text/babel" data-presets="react,env">
     const { useState, useEffect } = React;
 
     // --- ÍCONOS REUTILIZABLES ---
@@ -44,42 +50,53 @@
     const IconEdit3 = ({ size, className }) => <svg width={size} height={size} className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>;
     const IconCopy = ({ size }) => <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>;
 
+    // --- FUNCIONES SEGURAS PARA EL ALMACENAMIENTO (Evitan el bloqueo de pantalla en blanco) ---
+    const getSafeLocalItem = (key, defaultValue, isJson = true) => {
+      try {
+        const item = localStorage.getItem(key);
+        if (item === null) return defaultValue;
+        return isJson ? JSON.parse(item) : item;
+      } catch (e) {
+        console.warn('Acceso a localStorage bloqueado por el navegador.', e);
+        return defaultValue;
+      }
+    };
+
+    const setSafeLocalItem = (key, value, isJson = true) => {
+      try {
+        localStorage.setItem(key, isJson ? JSON.stringify(value) : value);
+      } catch (e) {
+        // Ignoramos el error silenciosamente
+      }
+    };
+
     // --- APLICACIÓN PRINCIPAL ---
     const App = () => {
       const [currentDate, setCurrentDate] = useState(new Date());
       
-      const [workedDays, setWorkedDays] = useState(() => {
-        const guardado = localStorage.getItem('app-workedDays');
-        return guardado ? JSON.parse(guardado) : {};
-      });
-      const [workerName, setWorkerName] = useState(() => {
-        return localStorage.getItem('app-workerName') || 'Nombre del Trabajador';
-      });
-      const [dayDetails, setDayDetails] = useState(() => {
-        const guardado = localStorage.getItem('app-dayDetails');
-        return guardado ? JSON.parse(guardado) : {};
-      });
+      // Usamos las funciones seguras creadas arriba
+      const [workedDays, setWorkedDays] = useState(() => getSafeLocalItem('app-workedDays', {}));
+      const [workerName, setWorkerName] = useState(() => getSafeLocalItem('app-workerName', 'Nombre del Trabajador', false));
+      const [dayDetails, setDayDetails] = useState(() => getSafeLocalItem('app-dayDetails', {}));
       
       const [modalInfo, setModalInfo] = useState({ isOpen: false, day: null, dateKey: '', tempDetail: '' });
 
-      useEffect(() => { localStorage.setItem('app-workedDays', JSON.stringify(workedDays)); }, [workedDays]);
-      useEffect(() => { localStorage.setItem('app-workerName', workerName); }, [workerName]);
-      useEffect(() => { localStorage.setItem('app-dayDetails', JSON.stringify(dayDetails)); }, [dayDetails]);
+      // Guardado automático seguro
+      useEffect(() => { setSafeLocalItem('app-workedDays', workedDays); }, [workedDays]);
+      useEffect(() => { setSafeLocalItem('app-workerName', workerName, false); }, [workerName]);
+      useEffect(() => { setSafeLocalItem('app-dayDetails', dayDetails); }, [dayDetails]);
 
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth();
 
       const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-      
-      // NUEVO: La semana empieza en Lunes para organizar mejor los fines de semana
       const dayNames = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
 
       const daysInMonth = new Date(year, month + 1, 0).getDate();
       
-      // Función para calcular el primer día del mes adaptado a Lunes = 0
       const getFirstDayAdapted = (y, m) => {
         let day = new Date(y, m, 1).getDay();
-        return day === 0 ? 6 : day - 1; // Si es domingo (0), lo pasamos al final (6)
+        return day === 0 ? 6 : day - 1; 
       };
       
       const firstDayOfMonth = getFirstDayAdapted(year, month);
@@ -128,12 +145,11 @@
         }
       };
 
-      // Calcular días laborables reales del mes (Lunes a Viernes)
       const getLaborableDaysInMonth = () => {
         let count = 0;
         for (let i = 1; i <= daysInMonth; i++) {
           const d = new Date(year, month, i).getDay();
-          if (d !== 0 && d !== 6) count++; // Excluir Sábados (6) y Domingos (0)
+          if (d !== 0 && d !== 6) count++; 
         }
         return count;
       };
@@ -148,7 +164,6 @@
 
       const laborableDays = getLaborableDaysInMonth();
       const workedCount = currentMonthWorkedCount();
-      // Si trabaja fines de semana puede superar el 100%, lo cual es correcto
       const percentage = Math.round((workedCount / laborableDays) * 100);
 
       const exportAnnualReport = () => {
@@ -192,7 +207,6 @@
 
         const startX = 55, startY = 160, colWidth = 235, rowHeight = 210, cellSize = 24, cellGap = 4;
         
-        // Modificado para aceptar "modo de dibujo" (relleno o solo borde)
         const drawRoundRect = (x, y, w, h, r, isStrokeMode = false) => {
           ctx.beginPath();
           ctx.moveTo(x + r, y);
@@ -239,7 +253,7 @@
           for (let d = 1; d <= daysInM; d++) {
             const dayPos = firstDay + d - 1;
             const dRow = Math.floor(dayPos / 7);
-            const dCol = dayPos % 7; // 5 es Sábado, 6 es Domingo
+            const dCol = dayPos % 7; 
             const isWeekend = dCol === 5 || dCol === 6;
             
             const cellX = x + dCol * (cellSize + cellGap);
@@ -248,20 +262,17 @@
             const dateKey = formatDateKey(year, m, d);
             const isWorked = workedDays[dateKey];
             
-            // Lógica de colores del reporte
             if (isWorked) {
               ctx.fillStyle = '#39d353';
               drawRoundRect(cellX, cellY, cellSize, cellSize, 4, false);
-              ctx.fillStyle = '#ffffff'; // Texto blanco
+              ctx.fillStyle = '#ffffff'; 
             } else if (isWeekend) {
-              // Fines de semana no trabajados: Solo el borde, sin fondo (Totalmente limpios)
               drawRoundRect(cellX, cellY, cellSize, cellSize, 4, true);
-              ctx.fillStyle = '#D1D5DB'; // Texto muy tenue
+              ctx.fillStyle = '#D1D5DB'; 
             } else {
-              // Días de semana no trabajados: Fondo gris
               ctx.fillStyle = '#F3F4F6';
               drawRoundRect(cellX, cellY, cellSize, cellSize, 4, false);
-              ctx.fillStyle = '#9CA3AF'; // Texto gris oscuro
+              ctx.fillStyle = '#9CA3AF'; 
             }
 
             ctx.font = 'bold 11px system-ui, -apple-system, sans-serif';
@@ -312,7 +323,7 @@
 
         for (let day = 1; day <= daysInMonth; day++) {
           const dayOfWeekPos = (firstDayOfMonth + day - 1) % 7;
-          const isWeekend = dayOfWeekPos === 5 || dayOfWeekPos === 6; // Sábado y Domingo
+          const isWeekend = dayOfWeekPos === 5 || dayOfWeekPos === 6; 
           
           const dateKey = formatDateKey(year, month, day);
           const isWorked = workedDays[dateKey];
@@ -329,7 +340,7 @@
                 ${isWorked 
                   ? 'bg-[#39d353] border-[#39d353] text-gray-900 shadow-[0_0_10px_rgba(57,211,83,0.4)]' 
                   : isWeekend 
-                    ? 'bg-transparent border-dashed border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-[#161b22]/50' // Estilo tenue para fin de semana
+                    ? 'bg-transparent border-dashed border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-[#161b22]/50' 
                     : 'bg-white dark:bg-[#161b22] border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800'
                 }
                 ${isToday && !isWorked ? 'ring-2 ring-blue-500' : ''}
@@ -395,7 +406,4 @@
                   <p className="text-sm font-medium text-gray-500 dark:text-gray-400">Días trabajados este mes</p>
                   <p className="text-4xl font-bold mt-1 text-[#39d353]">
                     {workedCount} <span className="text-lg text-gray-400 font-normal">/ {laborableDays} laborables</span>
-                  </p>
-                </div>
-                <div className="h-16 w-16 rounded-full border-4 border-[#39d353]/20 flex items-center justify-center">
-                  <div className="text-[#39d353] font-bold" style={{ fontSize: percentage >= 100 ? '1.25rem' : '1.5rem
+  
