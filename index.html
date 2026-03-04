@@ -12,9 +12,9 @@
     tailwind.config = { darkMode: 'media' }
   </script>
 
-  <script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/babel-standalone@6.26.0/babel.min.js"></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
   <style>
     body { 
@@ -40,11 +40,23 @@
   <div id="root">
     <div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; color: #6b7280; font-family: sans-serif;">
       <div class="loader"></div>
-      <div>Cargando app móvil...</div>
+      <div id="loading-text">Cargando app móvil...</div>
     </div>
   </div>
 
-  <script type="text/babel">
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        if (typeof React === 'undefined') {
+          document.getElementById('loading-text').innerHTML = '<span style="color:#ef4444; text-align:center; padding:20px; display:block;"><b>Error de conexión:</b><br>No se descargaron las herramientas visuales.<br>Por favor, verifica tu internet.</span>';
+          var loader = document.querySelector('.loader');
+          if (loader) loader.style.display = 'none';
+        }
+      }, 3000);
+    });
+  </script>
+
+  <script type="text/babel" data-presets="react,env">
     const { useState, useEffect } = React;
 
     // --- ÍCONOS ---
@@ -401,17 +413,4 @@
             </div>
 
             {/* Calendario */}
-            <div className="bg-white dark:bg-[#161b22] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-              <div className="grid grid-cols-7 mb-2">
-                {dayNames.map((day, idx) => (
-                  <div key={day} className={`text-center font-bold text-xs mb-2 ${idx >= 5 ? 'text-gray-400/60' : 'text-gray-500'}`}>
-                    {day}
-                  </div>
-                ))}
-              </div>
-
-              <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
-                {renderCalendarDays()}
-              </div>
-              
-              <div cl
+            <div className="bg-white dark:bg-[#161b22] p-4 r
