@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consola de Reportes de Asistencia</title>
+    <title>App de Asistencia</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         body {
@@ -14,187 +14,96 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding-bottom: 50px;
         }
-
-        /* Paneles de Control */
-        .main-controls {
+        .controls {
             width: 100%;
-            max-width: 900px;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
-            box-sizing: border-box;
-        }
-
-        .control-row {
+            max-width: 800px;
             display: flex;
             gap: 10px;
-            margin-bottom: 10px;
-            flex-wrap: wrap;
-            align-items: center;
+            margin-bottom: 20px;
         }
-        .control-row:last-child { margin-bottom: 0; }
-
-        .control-group-title {
-            font-size: 14px;
-            font-weight: bold;
-            color: #555;
-            width: 100%;
-            margin-bottom: 5px;
-            border-bottom: 1px solid #eee;
-            padding-bottom: 3px;
-        }
-
-        input[type="month"] {
+        .controls input[type="month"] {
             flex: 1;
-            min-width: 150px;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ccc;
-            border-radius: 6px;
-            font-size: 15px;
+            border-radius: 8px;
+            font-size: 16px;
         }
-
-        button {
+        .btn-export {
+            background-color: #28a745;
+            color: white;
             border: none;
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-size: 14px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 16px;
             font-weight: bold;
             cursor: pointer;
-            transition: background 0.2s;
-            display: flex;
-            align-items: center;
-            gap: 5px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
-
-        /* Colores Botones */
-        .btn-main { background-color: #007bff; color: white; }
-        .btn-main:hover { background-color: #0069d9; }
-
-        .btn-success { background-color: #28a745; color: white; margin-left: auto;}
-        .btn-success:hover { background-color: #218838; }
-
-        .btn-tools { background-color: #6c757d; color: white; padding: 8px 12px; font-size: 13px;}
-        .btn-tools:hover { background-color: #5a6268; }
-
-        .btn-danger { background-color: #dc3545; color: white; padding: 8px 12px; font-size: 13px;}
-        .btn-danger:hover { background-color: #c82333; }
-
-
-        /* Contenedor del Documento (Simulación Word) */
+        .btn-export:hover {
+            background-color: #218838;
+        }
         #document-container {
             background: white;
-            padding: 40px 30px;
-            border-radius: 2px;
+            padding: 30px 20px;
+            border-radius: 8px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             width: 100%;
-            max-width: 900px;
+            max-width: 800px;
             box-sizing: border-box;
-            position: relative;
-            
-            /* Layout de dos columnas */
-            display: flex;
-            gap: 25px;
         }
-
-        /* Columna Izquierda (Imagen) */
-        #doc-left-col {
-            width: 25%; /* Ancho fijo para la columna de imagen */
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            position: relative; /* Para mover la imagen dentro */
-        }
-
-        #image-placeholder {
-            width: 100%;
-            height: 150px;
-            border: 2px dashed #ccc;
-            border-radius: 4px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #888;
-            font-size: 13px;
-            text-align: center;
-            background: #fafafa;
-        }
-
-        #uploaded-image {
-            display: none; /* Oculto hasta que se suba */
-            max-width: 100%; /* No salir de su columna */
-            height: auto;
-            position: relative; /* Permite mover arriba/abajo */
-            transition: width 0.1s ease, top 0.1s ease;
-        }
-
-        /* Columna Derecha (Contenido) */
-        #doc-right-col {
-            width: 75%;
-        }
-
         h2 {
             text-align: center;
             margin-top: 0;
             color: #333;
             text-transform: uppercase;
-            font-size: 19px;
-            margin-bottom: 20px;
+            font-size: 20px;
         }
-
         .header-info {
-            margin-bottom: 25px;
-            font-size: 14px;
-            line-height: 1.5;
+            margin-bottom: 20px;
+            font-size: 15px;
+            line-height: 1.6;
         }
         .header-info strong {
             display: inline-block;
-            width: 70px;
-            color: #555;
+            width: 80px;
         }
-
-        /* Inputs invisibles */
-        input.clean-input {
+        /* Estilos de inputs invisibles para que parezca Word */
+        input.clean-input, select.clean-input {
             border: none;
             border-bottom: 1px dashed transparent;
             background: transparent;
-            font-size: 14px;
+            font-size: 15px;
             font-family: inherit;
-            color: #000;
-            width: calc(100% - 80px);
+            color: #333;
+            width: calc(100% - 90px);
             outline: none;
-            padding: 2px;
         }
         input.clean-input:focus, input.clean-input:hover {
-            border-bottom: 1px dashed #999;
-            background: #fdfdfd;
+            border-bottom: 1px dashed #ccc;
+            background: #f9f9f9;
         }
-
-        /* Tabla */
         table {
             width: 100%;
             border-collapse: collapse;
-            font-size: 13px;
+            font-size: 14px;
         }
         th, td {
             border: 1px solid #000;
-            padding: 5px;
+            padding: 6px;
             text-align: left;
             vertical-align: top;
         }
         th {
-            background-color: #f2f2f2;
-            font-weight: bold;
+            background-color: #f0f0f0;
         }
         
+        /* Nuevo estilo para que el texto baje de línea automáticamente */
         .editable-cell {
             width: 100%;
-            min-height: 18px;
+            min-height: 20px;
             outline: none;
-            word-wrap: break-word;
+            word-wrap: break-word; /* Fuerza a que el texto largo baje */
             white-space: pre-wrap;
         }
         .editable-cell:hover, .editable-cell:focus {
@@ -205,98 +114,55 @@
             width: 100%;
             border: none;
             background: transparent;
-            font-size: 13px;
+            font-size: 14px;
             font-family: inherit;
             outline: none;
-            padding: 0;
-            cursor: pointer;
+            padding: 2px 0;
+        }
+        td select:hover {
+            background: #f9f9f9;
         }
         .weekend {
-            background-color: #fbfbfb;
-            color: #777;
+            background-color: #fafafa;
+            color: #666;
             font-style: italic;
         }
-
-        /* Ocultar input file nativo */
-        #fileInput { display: none; }
     </style>
 </head>
 <body>
 
-    <div class="main-controls">
-        
-        <div class="control-row">
-            <div class="control-group-title">Configuración del Reporte</div>
-            <input type="month" id="monthPicker" onchange="generateTable()">
-            <button class="btn-success" onclick="exportToImage()">
-                💾 Exportar como Imagen
-            </button>
-        </div>
-
-        <div class="control-row">
-            <div class="control-group-title">Herramientas de Imagen (Columna Izquierda)</div>
-            
-            <input type="file" id="fileInput" accept="image/*" onchange="handleImageUpload(this)">
-            <button class="btn-main" onclick="triggerFileInput()">📁 Subir Imagen</button>
-            <button class="btn-danger" id="btnRemoveImg" onclick="removeImage()" style="display:none;">🗑️ Quitar</button>
-            
-            <span style="margin-left: 15px; font-size: 13px; color: #666;">Posición Y:</span>
-            <button class="btn-tools" onclick="moveImage(-10)">↑ Subir</button>
-            <button class="btn-tools" onclick="moveImage(10)">↓ Bajar</button>
-            
-            <span style="margin-left: 15px; font-size: 13px; color: #666;">Tamaño:</span>
-            <button class="btn-tools" onclick="resizeImage(10)">🔍 +10%</button>
-            <button class="btn-tools" onclick="resizeImage(-10)">🔎 -10%</button>
-            <span id="sizeStatus" style="font-size: 12px; color: #888;">(100%)</span>
-        </div>
+    <div class="controls">
+        <input type="month" id="monthPicker" onchange="generateTable()">
+        <button class="btn-export" onclick="exportToImage()">Exportar Imagen</button>
     </div>
 
     <div id="document-container">
+        <h2>Registro de Asistencia y Ruta</h2>
         
-        <div id="doc-left-col">
-            <div id="image-placeholder">Espacio para<br>Imagen/Logo</div>
-            <img id="uploaded-image" src="" alt="Logo Reporte">
+        <div class="header-info">
+            <strong>Mes:</strong> <input type="text" id="displayMonth" class="clean-input" value="Febrero 2026"><br>
+            <strong>Nombre:</strong> <input type="text" class="clean-input" value="Marcos Méndez"><br>
+            <strong>Cargo:</strong> <input type="text" class="clean-input" value="Conductor"><br>
+            <strong>Empresa:</strong> <input type="text" class="clean-input" value="Transportes Uribe"><br>
+            <strong>Jornada:</strong> <input type="text" class="clean-input" value="Lunes a Viernes">
         </div>
 
-        <div id="doc-right-col">
-            <h2>Registro de Asistencia y Ruta</h2>
-            
-            <div class="header-info">
-                <strong>Mes:</strong> <input type="text" id="displayMonth" class="clean-input" value=""><br>
-                <strong>Nombre:</strong> <input type="text" class="clean-input" value="Marcos Méndez"><br>
-                <strong>Cargo:</strong> <input type="text" class="clean-input" value="Conductor"><br>
-                <strong>Empresa:</strong> <input type="text" class="clean-input" value="Transportes Uribe"><br>
-                <strong>Jornada:</strong> <input type="text" class="clean-input" value="Lunes a Viernes">
-            </div>
-
-            <table>
-                <thead>
-                    <tr>
-                        <th width="15%">Fecha</th>
-                        <th width="18%">Día</th>
-                        <th width="42%">Ruta</th>
-                        <th width="25%">Estado</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    </tbody>
-            </table>
-        </div>
-
+        <table>
+            <thead>
+                <tr>
+                    <th width="15%">Fecha</th>
+                    <th width="15%">Día</th>
+                    <th width="45%">Ruta</th> <th width="25%">Estado</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                </tbody>
+        </table>
     </div>
 
     <script>
         const daysInSpanish = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
         const monthsInSpanish = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
-        
-        // Estado de la imagen
-        let imgScale = 100; // Porcentaje del ancho de la columna
-        let imgTopValue = 0; // Píxeles desde arriba
-
-        const imgElement = document.getElementById('uploaded-image');
-        const placeholder = document.getElementById('image-placeholder');
-        const btnRemove = document.getElementById('btnRemoveImg');
-        const sizeStatus = document.getElementById('sizeStatus');
 
         function setInitialMonth() {
             const today = new Date();
@@ -314,6 +180,7 @@
             const date = new Date(year, month - 1, 1);
             const totalDays = new Date(year, month, 0).getDate();
             
+            // Actualizar el título del mes
             document.getElementById('displayMonth').value = `${monthsInSpanish[date.getMonth()]} ${year}`;
 
             const tbody = document.getElementById('tableBody');
@@ -327,8 +194,10 @@
                 const tr = document.createElement('tr');
                 if (isWeekend) tr.className = 'weekend';
 
+                // Valores por defecto
                 const routeValue = isWeekend ? '-' : 'San Miguel';
                 
+                // Opciones del select de estado
                 const statusOptions = `
                     <option value="Presente" ${!isWeekend ? 'selected' : ''}>Presente</option>
                     <option value="Descanso" ${isWeekend ? 'selected' : ''}>Descanso</option>
@@ -340,96 +209,37 @@
                     <td>${String(i).padStart(2, '0')}-${month}</td>
                     <td>${daysInSpanish[dayOfWeek]}</td>
                     <td><div contenteditable="true" class="editable-cell">${routeValue}</div></td>
-                    <td><select>${statusOptions}</select></td>
+                    <td>
+                        <select>
+                            ${statusOptions}
+                        </select>
+                    </td>
                 `;
                 tbody.appendChild(tr);
             }
         }
 
-        // --- FUNCIONES DE IMAGEN ---
-
-        function triggerFileInput() {
-            document.getElementById('fileInput').click();
-        }
-
-        function handleImageUpload(input) {
-            if (input.files && input.files[0]) {
-                const reader = new FileReader();
-                
-                reader.onload = function(e) {
-                    imgElement.src = e.target.result;
-                    imgElement.style.display = 'block';
-                    placeholder.style.display = 'none';
-                    btnRemove.style.display = 'inline-flex';
-                    
-                    // Resetear controles al subir nueva
-                    imgScale = 100;
-                    imgTopValue = 0;
-                    updateImageStyle();
-                }
-                
-                reader.readAsDataURL(input.files[0]);
-            }
-        }
-
-        function removeImage() {
-            imgElement.src = '';
-            imgElement.style.display = 'none';
-            placeholder.style.display = 'flex';
-            btnRemove.style.display = 'none';
-            document.getElementById('fileInput').value = ''; // Limpiar input
-        }
-
-        function moveImage(delta) {
-            if (imgElement.style.display === 'none') return;
-            imgTopValue += delta;
-            updateImageStyle();
-        }
-
-        function resizeImage(delta) {
-            if (imgElement.style.display === 'none') return;
-            imgScale += delta;
-            // Límites lógicos (10% a 200%)
-            if (imgScale < 10) imgScale = 10;
-            if (imgScale > 200) imgScale = 200;
-            updateImageStyle();
-        }
-
-        function updateImageStyle() {
-            // Aplicar tamaño por porcentaje relativo a la columna izquierda
-            imgElement.style.width = imgScale + '%';
-            // Aplicar posición vertical
-            imgElement.style.top = imgTopValue + 'px';
-            // Actualizar texto de estado
-            sizeStatus.innerText = `(${imgScale}%)`;
-        }
-
-        // --- EXPORTAR ---
-
         function exportToImage() {
             const element = document.getElementById('document-container');
-            const btn = document.querySelector('.btn-success');
+            const btn = document.querySelector('.btn-export');
             
-            btn.innerText = "⏳ Generando...";
+            // Efecto visual de cargando
+            btn.innerText = "Generando...";
             btn.style.backgroundColor = "#6c757d";
 
-            // html2canvas captura el estado visual actual (incluyendo transforms y top)
-            html2canvas(element, { 
-                scale: 2, // Alta calidad
-                logging: false,
-                useCORS: true // Por si acaso hay imágenes externas
-            }).then(canvas => {
+            html2canvas(element, { scale: 2 }).then(canvas => {
                 const link = document.createElement('a');
-                const mesActual = document.getElementById('displayMonth').value.replace(/ /g, '_');
-                link.download = `Reporte_Asistencia_${mesActual}.png`;
+                link.download = `Asistencia_${document.getElementById('displayMonth').value}.png`;
                 link.href = canvas.toDataURL('image/png');
                 link.click();
                 
-                btn.innerText = "💾 Exportar como Imagen";
+                // Restaurar botón
+                btn.innerText = "Exportar Imagen";
                 btn.style.backgroundColor = "#28a745";
             });
         }
 
+        // Cargar el mes actual al iniciar
         setInitialMonth();
     </script>
 
