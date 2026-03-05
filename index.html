@@ -24,13 +24,13 @@
     }
     input, textarea { user-select: text; }
     
-    /* Utilidad para ocultar elementos */
     .hidden { display: none !important; }
   </style>
 </head>
 <body class="p-2 sm:p-4 pb-10">
 
-  <div class="max-w-md mx-auto space-y-4">
+  <!-- Contenedor Principal -->
+  <div id="app-container" class="max-w-md mx-auto space-y-4">
     
     <!-- Encabezado -->
     <header class="bg-white dark:bg-[#161b22] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 flex items-center gap-3">
@@ -54,7 +54,7 @@
         <button id="btnPrevMonth" class="p-2 rounded-full bg-gray-100 dark:bg-[#0d1117] active:bg-gray-200 dark:active:bg-gray-800">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
         </button>
-        <div id="monthLabel" class="text-center font-bold text-lg capitalize"></div>
+        <div id="monthLabel" class="text-center font-bold text-lg capitalize">Cargando...</div>
         <button id="btnNextMonth" class="p-2 rounded-full bg-gray-100 dark:bg-[#0d1117] active:bg-gray-200 dark:active:bg-gray-800">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
         </button>
@@ -75,7 +75,7 @@
 
     <!-- Calendario -->
     <div class="bg-white dark:bg-[#161b22] p-4 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800">
-      <div class="grid grid-cols-7 mb-2 text-center font-bold text-xs mb-2">
+      <div class="grid grid-cols-7 mb-2 text-center font-bold text-xs">
         <div class="text-gray-500">Lu</div>
         <div class="text-gray-500">Ma</div>
         <div class="text-gray-500">Mi</div>
@@ -85,8 +85,8 @@
         <div class="text-gray-400/60">Do</div>
       </div>
 
-      <div id="calendarGrid" class="grid grid-cols-7 gap-1.5 sm:gap-2">
-        <!-- Los días se generan con JS -->
+      <div id="calendarGrid" class="grid grid-cols-7 gap-1.5 sm:gap-2 mt-2">
+        <!-- Generado por JS -->
       </div>
       
       <div class="mt-4 flex flex-wrap justify-center gap-3 text-xs text-gray-500">
@@ -102,7 +102,7 @@
       </div>
     </div>
 
-    <!-- Botones de Acción -->
+    <!-- Botones -->
     <div class="flex flex-col gap-3">
       <button id="btnExport" class="w-full flex justify-center items-center gap-2 p-3.5 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl font-bold active:bg-blue-100 transition-colors">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
@@ -116,9 +116,7 @@
 
   </div>
 
-  <!-- MODALES (Ocultos por defecto) -->
-  
-  <!-- Modal Limpiar -->
+  <!-- Modales -->
   <div id="modalClear" class="hidden fixed inset-0 bg-black/60 flex items-end sm:items-center justify-center z-50 p-4">
     <div class="bg-white dark:bg-[#161b22] w-full max-w-sm rounded-2xl p-6 mb-4 shadow-xl">
       <h3 class="text-xl font-bold mb-2 text-gray-900 dark:text-white">¿Limpiar mes?</h3>
@@ -130,7 +128,6 @@
     </div>
   </div>
 
-  <!-- Modal Detalle Día -->
   <div id="modalDay" class="hidden fixed inset-0 bg-black/60 flex items-end justify-center z-50 sm:p-4">
     <div class="bg-white dark:bg-[#161b22] w-full max-w-md rounded-t-3xl sm:rounded-2xl p-5 shadow-2xl max-h-[90vh] overflow-y-auto pb-8">
       <div class="w-12 h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full mx-auto mb-4 sm:hidden"></div>
@@ -170,19 +167,39 @@
     </div>
   </div>
 
-  <!-- SCRIPT PRINCIPAL EN JAVASCRIPT PURO -->
   <script>
-    // 1. ESTADO DE LA APLICACIÓN
+    // --- ESCUDO CONTRA DATOS CORRUPTOS EN MEMORIA ---
+    // Esta función verifica si la memoria guardada en el navegador se rompió por los intentos anteriores.
+    // Si está rota (ej. dice "[object Object]"), la limpia automáticamente para que no choque la app.
+    const getSafeLocalData = (key, defaultObj) => {
+      try {
+        const data = localStorage.getItem(key);
+        if (!data || data === "undefined" || data === "null" || data === "[object Object]") {
+          return defaultObj;
+        }
+        const parsed = JSON.parse(data);
+        return (typeof parsed === 'object' && parsed !== null) ? parsed : defaultObj;
+      } catch(e) {
+        console.warn("Se detectó memoria dañada. Limpiando caché para", key);
+        localStorage.removeItem(key);
+        return defaultObj;
+      }
+    };
+
+    // 1. ESTADO GLOBAL
     let currentDate = new Date();
-    let workedDays = JSON.parse(localStorage.getItem('app-workedDays')) || {};
-    let dayDetails = JSON.parse(localStorage.getItem('app-dayDetails')) || {};
-    let workerName = localStorage.getItem('app-workerName') || 'Nombre';
+    let workedDays = getSafeLocalData('app-workedDays', {});
+    let dayDetails = getSafeLocalData('app-dayDetails', {});
+    
+    let workerName = localStorage.getItem('app-workerName') || '';
+    if (workerName === 'Nombre') workerName = ''; // Quitar basura de versiones previas
+
     let activeModalDateKey = null;
 
     const monthNames = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
     const shortDayNames = ['Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sá', 'Do'];
 
-    // 2. REFERENCIAS AL DOM
+    // 2. ELEMENTOS DEL DOM
     const elWorkerName = document.getElementById('workerNameInput');
     const elMonthLabel = document.getElementById('monthLabel');
     const elGrid = document.getElementById('calendarGrid');
@@ -190,137 +207,133 @@
     const elLaborableDays = document.getElementById('laborableDaysLabel');
     const elPercentage = document.getElementById('percentageLabel');
     
-    // Modales
     const modalClear = document.getElementById('modalClear');
     const modalDay = document.getElementById('modalDay');
     
-    // Detalle de día
     const elModalDayTitle = document.getElementById('modalDayTitle');
     const btnToggleWork = document.getElementById('btnToggleWork');
     const elDayDetailInput = document.getElementById('dayDetailInput');
     const btnCopyYesterday = document.getElementById('btnCopyYesterday');
 
-    // 3. FUNCIONES AUXILIARES
+    // 3. UTILIDADES
     const pad = n => n < 10 ? '0' + n : n;
     const formatDateKey = (y, m, d) => `${y}-${pad(m + 1)}-${pad(d)}`;
     
     const saveToLocal = () => {
-      localStorage.setItem('app-workedDays', JSON.stringify(workedDays));
-      localStorage.setItem('app-dayDetails', JSON.stringify(dayDetails));
-      localStorage.setItem('app-workerName', workerName);
+      try {
+        localStorage.setItem('app-workedDays', JSON.stringify(workedDays));
+        localStorage.setItem('app-dayDetails', JSON.stringify(dayDetails));
+        localStorage.setItem('app-workerName', workerName);
+      } catch (e) { console.error("No se pudo guardar", e); }
     };
 
     const getFirstDayAdapted = (y, m) => {
       let day = new Date(y, m, 1).getDay();
-      return day === 0 ? 6 : day - 1; // Lunes = 0, Domingo = 6
+      return day === 0 ? 6 : day - 1; // Hacer que Lunes sea el día inicial
     };
 
-    // 4. RENDERIZAR CALENDARIO Y ESTADÍSTICAS
+    // 4. RENDERIZADO PRINCIPAL
     const renderApp = () => {
-      const year = currentDate.getFullYear();
-      const month = currentDate.getMonth();
-      const daysInMonth = new Date(year, month + 1, 0).getDate();
-      const firstDay = getFirstDayAdapted(year, month);
-      
-      const today = new Date();
+      try {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const firstDay = getFirstDayAdapted(year, month);
+        const today = new Date();
 
-      elWorkerName.value = workerName;
-      elMonthLabel.textContent = `${monthNames[month]} ${year}`;
+        elWorkerName.value = workerName;
+        elMonthLabel.textContent = `${monthNames[month]} ${year}`;
 
-      // Limpiar grid
-      elGrid.innerHTML = '';
+        elGrid.innerHTML = ''; // Limpiar cuadrícula
 
-      // Celdas vacías
-      for (let i = 0; i < firstDay; i++) {
-        const div = document.createElement('div');
-        div.className = 'h-12 border border-transparent';
-        elGrid.appendChild(div);
+        // Celdas vacías (espacios antes del día 1)
+        for (let i = 0; i < firstDay; i++) {
+          const div = document.createElement('div');
+          div.className = 'h-12 border border-transparent';
+          elGrid.appendChild(div);
+        }
+
+        let laborableCount = 0;
+        let workedCount = 0;
+
+        // Dibujar días
+        for (let day = 1; day <= daysInMonth; day++) {
+          const dateKey = formatDateKey(year, month, day);
+          const dayOfWeekPos = (firstDay + day - 1) % 7;
+          const isWeekend = dayOfWeekPos === 5 || dayOfWeekPos === 6;
+          
+          const isWorked = workedDays[dateKey];
+          const hasDetail = dayDetails[dateKey] && dayDetails[dateKey].trim() !== '';
+          const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
+
+          if (!isWeekend) laborableCount++;
+          if (isWorked) workedCount++;
+
+          const btn = document.createElement('button');
+          
+          let classes = 'relative h-12 w-full rounded-lg flex items-center justify-center text-base sm:text-lg font-bold transition-transform active:scale-95 ';
+          
+          if (isWorked) {
+            classes += 'bg-[#39d353] text-gray-900 shadow-md ';
+          } else if (isWeekend) {
+            classes += 'border border-dashed border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 ';
+          } else {
+            classes += 'bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 shadow-sm ';
+          }
+
+          if (isToday && !isWorked) {
+            classes += 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-[#0d1117] ';
+          }
+
+          btn.className = classes;
+          btn.innerHTML = `${day}`;
+
+          if (hasDetail) {
+            btn.innerHTML += `<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500 border border-white dark:border-[#161b22]"></span>`;
+          }
+          if (isToday) {
+            btn.innerHTML += `<span class="absolute bottom-1 w-1 h-1 rounded-full ${isWorked ? 'bg-white' : 'bg-blue-500'}"></span>`;
+          }
+
+          btn.onclick = () => openDayModal(year, month, day);
+          elGrid.appendChild(btn);
+        }
+
+        // Estadísticas
+        elWorkedCount.textContent = workedCount;
+        elLaborableDays.textContent = laborableCount;
+        const percentage = laborableCount === 0 ? 0 : Math.round((workedCount / laborableCount) * 100);
+        elPercentage.textContent = `${percentage}%`;
+
+      } catch (error) {
+        console.error("Fallo general al dibujar la app:", error);
       }
-
-      let laborableCount = 0;
-      let workedCount = 0;
-
-      // Días del mes
-      for (let day = 1; day <= daysInMonth; day++) {
-        const dateKey = formatDateKey(year, month, day);
-        const dayOfWeekPos = (firstDay + day - 1) % 7;
-        const isWeekend = dayOfWeekPos === 5 || dayOfWeekPos === 6;
-        
-        const isWorked = workedDays[dateKey];
-        const hasDetail = dayDetails[dateKey] && dayDetails[dateKey].trim() !== '';
-        const isToday = day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
-
-        if (!isWeekend) laborableCount++;
-        if (isWorked) workedCount++;
-
-        const btn = document.createElement('button');
-        
-        // Estilos base
-        let classes = 'relative h-12 w-full rounded-lg flex items-center justify-center text-base sm:text-lg font-bold transition-transform active:scale-95 ';
-        
-        // Colores según estado
-        if (isWorked) {
-          classes += 'bg-[#39d353] text-gray-900 shadow-md ';
-        } else if (isWeekend) {
-          classes += 'border border-dashed border-gray-300 dark:border-gray-700 text-gray-400 dark:text-gray-600 ';
-        } else {
-          classes += 'bg-white dark:bg-[#161b22] border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 shadow-sm ';
-        }
-
-        if (isToday && !isWorked) {
-          classes += 'ring-2 ring-blue-500 ring-offset-1 dark:ring-offset-[#0d1117] ';
-        }
-
-        btn.className = classes;
-        btn.innerHTML = `${day}`;
-
-        // Indicadores (Puntito azul ruta, Puntito blanco/azul hoy)
-        if (hasDetail) {
-          btn.innerHTML += `<span class="absolute top-1 right-1 w-2 h-2 rounded-full bg-blue-500 border border-white dark:border-[#161b22]"></span>`;
-        }
-        if (isToday) {
-          btn.innerHTML += `<span class="absolute bottom-1 w-1 h-1 rounded-full ${isWorked ? 'bg-white' : 'bg-blue-500'}"></span>`;
-        }
-
-        // Evento abrir modal
-        btn.onclick = () => openDayModal(year, month, day);
-
-        elGrid.appendChild(btn);
-      }
-
-      // Actualizar estadísticas
-      elWorkedCount.textContent = workedCount;
-      elLaborableDays.textContent = laborableCount;
-      const percentage = laborableCount === 0 ? 0 : Math.round((workedCount / laborableCount) * 100);
-      elPercentage.textContent = `${percentage}%`;
     };
 
-    // 5. LÓGICA DE NAVEGACIÓN
+    // 5. EVENTOS NAVEGACIÓN
     document.getElementById('btnPrevMonth').onclick = () => {
       currentDate.setMonth(currentDate.getMonth() - 1);
       renderApp();
     };
+    
     document.getElementById('btnNextMonth').onclick = () => {
       currentDate.setMonth(currentDate.getMonth() + 1);
       renderApp();
     };
+    
     elWorkerName.oninput = (e) => {
       workerName = e.target.value;
       saveToLocal();
     };
 
-    // 6. LÓGICA DEL MODAL DE DÍA
+    // 6. EVENTOS DEL MODAL DE DETALLE DE RUTA
     const openDayModal = (y, m, d) => {
       activeModalDateKey = formatDateKey(y, m, d);
       elModalDayTitle.textContent = `${d} de ${monthNames[m]} ${y}`;
       
-      // Estado de trabajo
       updateToggleBtnUI(workedDays[activeModalDateKey]);
-      
-      // Texto detalle
       elDayDetailInput.value = dayDetails[activeModalDateKey] || '';
 
-      // Evaluar botón "Copiar Ayer"
       const datePrev = new Date(y, m, d);
       datePrev.setDate(datePrev.getDate() - 1);
       const prevKey = formatDateKey(datePrev.getFullYear(), datePrev.getMonth(), datePrev.getDate());
@@ -346,9 +359,7 @@
     };
 
     btnToggleWork.onclick = () => {
-      // Toggle temporal en UI
-      const currentState = workedDays[activeModalDateKey];
-      workedDays[activeModalDateKey] = !currentState;
+      workedDays[activeModalDateKey] = !workedDays[activeModalDateKey];
       updateToggleBtnUI(workedDays[activeModalDateKey]);
     };
 
@@ -361,7 +372,7 @@
 
     document.getElementById('btnCloseModalDay').onclick = () => modalDay.classList.add('hidden');
 
-    // 7. LÓGICA DE LIMPIAR MES
+    // 7. EVENTOS LIMPIAR MES
     document.getElementById('btnClearAsk').onclick = () => modalClear.classList.remove('hidden');
     document.getElementById('btnCancelClear').onclick = () => modalClear.classList.add('hidden');
     document.getElementById('btnConfirmClear').onclick = () => {
@@ -379,7 +390,7 @@
       renderApp();
     };
 
-    // 8. EXPORTAR A CANVAS (IMAGEN)
+    // 8. EVENTO EXPORTAR IMAGEN DEL AÑO
     document.getElementById('btnExport').onclick = () => {
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
@@ -399,36 +410,16 @@
       canvas.height = height * scale;
       ctx.scale(scale, scale);
       
-      // Fondo
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, width, height);
       
-      // Título
       ctx.fillStyle = '#111827';
       ctx.font = 'bold 28px system-ui, -apple-system, sans-serif';
       ctx.textAlign = 'center';
-      ctx.fillText(`Reporte Anual: ${workerName} - ${year}`, width / 2, 60);
+      const safeName = workerName.trim() === '' ? 'Trabajador' : workerName;
+      ctx.fillText(`Reporte Anual: ${safeName} - ${year}`, width / 2, 60);
       
       const totalWorkedYear = Object.keys(workedDays).filter(k => k.startsWith(year.toString()) && workedDays[k]).length;
       ctx.font = '18px system-ui, -apple-system, sans-serif';
       ctx.fillStyle = '#4B5563';
-      ctx.fillText(`Total de días trabajados: ${totalWorkedYear}`, width / 2, 95);
-      
-      ctx.beginPath();
-      ctx.moveTo(50, 120);
-      ctx.lineTo(750, 120);
-      ctx.strokeStyle = '#E5E7EB';
-      ctx.stroke();
-
-      const startX = 55, startY = 160, colWidth = 235, rowHeight = 210, cellSize = 24, cellGap = 4;
-      
-      const drawRoundRect = (x, y, w, h, r, isStrokeMode = false) => {
-        ctx.beginPath();
-        ctx.moveTo(x + r, y); ctx.lineTo(x + w - r, y);
-        ctx.quadraticCurveTo(x + w, y, x + w, y + r);
-        ctx.lineTo(x + w, y + h - r);
-        ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
-        ctx.lineTo(x + r, y + h);
-        ctx.quadraticCurveTo(x, y + h, x, y + h - r);
-        ctx.lineTo(x, y + r);
-        ct
+      ctx.fillText(`Total
